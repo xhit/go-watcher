@@ -62,7 +62,7 @@ func (b *Builder) Build(p *Params) {
 }
 
 func (b *Builder) registerSignalHandler() {
-	signals := make(chan os.Signal)
+	signals := make(chan os.Signal, 3)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	<-signals
 	b.watcher.Close()

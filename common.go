@@ -101,7 +101,7 @@ func ParseArgs(args []string) *Params {
 	params := NewParams()
 
 	// remove the command argument
-	args = args[1:len(args)]
+	args = args[1:]
 
 	for i := 0; i < len(args); i++ {
 		arg := args[i]

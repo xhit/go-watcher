@@ -19,7 +19,7 @@ func TestPrepareRootDir(t *testing.T) {
 
 	w.rootdir = "balcony"
 	os.Setenv("GOPATH", "")
-	dir, err = w.prepareRootDir()
+	_, err = w.prepareRootDir()
 	if err != ErrPathNotSet {
 		t.Errorf("Expected %s but got %s for prepareRootDir", ErrPathNotSet, err)
 	}
