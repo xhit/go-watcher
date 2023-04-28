@@ -11,7 +11,7 @@ func main() {
 
 	w := watcher.MustRegisterWatcher(params)
 
-	r := watcher.NewRunner()
+	r := watcher.NewRunner(params)
 
 	// wait for build and run the binary with given params
 	go r.Run(params)

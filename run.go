@@ -6,7 +6,9 @@ package watcher
 
 import (
 	"log"
+	"os"
 	"os/exec"
+	"strconv"
 
 	"github.com/fatih/color"
 )
@@ -14,16 +16,24 @@ import (
 // Runner listens for the change events and depending on that kills
 // the obsolete process, and runs a new one
 type Runner struct {
-	start chan string
-	done  chan struct{}
-	cmd   *exec.Cmd
+	start     chan string
+	done      chan struct{}
+	cmd       *exec.Cmd
+	interrupt bool
 }
 
 // NewRunner creates a new Runner instance and returns its pointer
-func NewRunner() *Runner {
+func NewRunner(params *Params) *Runner {
+	interrupt, err := strconv.ParseBool(params.Get("interrupt-signal"))
+	if err != nil {
+		log.Println("interrupt-signal should be 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False")
+		os.Exit(1)
+	}
+
 	return &Runner{
-		start: make(chan string),
-		done:  make(chan struct{}),
+		start:     make(chan string),
+		done:      make(chan struct{}),
+		interrupt: interrupt,
 	}
 }
 
@@ -36,7 +46,7 @@ func (r *Runner) Run(p *Params) {
 		cmd, err := runCommand(fileName, p.Package...)
 		if err != nil {
 			log.Printf("Could not run the go binary: %s \n", err)
-			r.kill(cmd)
+			r.stop(cmd)
 
 			continue
 		}
@@ -47,29 +57,33 @@ func (r *Runner) Run(p *Params) {
 		go func(cmd *exec.Cmd) {
 			if err := cmd.Wait(); err != nil {
 				log.Printf("process interrupted: %s \n", err)
-				r.kill(cmd)
+				r.stop(cmd)
 			}
 		}(r.cmd)
 	}
 }
 
-// Restart kills the process, removes the old binary and
+// Restart kills or interrupt the process, removes the old binary and
 // restarts the new process
 func (r *Runner) restart(fileName string) {
-	r.kill(r.cmd)
+	r.stop(r.cmd)
 
 	r.start <- fileName
 }
 
-func (r *Runner) kill(cmd *exec.Cmd) {
+func (r *Runner) stop(cmd *exec.Cmd) {
 	if cmd != nil {
-		cmd.Process.Kill()
+		if r.interrupt {
+			cmd.Process.Signal(os.Interrupt)
+		} else {
+			cmd.Process.Kill()
+		}
 	}
 }
 
 func (r *Runner) Close() {
 	close(r.start)
-	r.kill(r.cmd)
+	r.stop(r.cmd)
 	close(r.done)
 }
 
