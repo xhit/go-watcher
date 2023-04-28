@@ -24,10 +24,16 @@ type Runner struct {
 
 // NewRunner creates a new Runner instance and returns its pointer
 func NewRunner(params *Params) *Runner {
-	interrupt, err := strconv.ParseBool(params.Get("interrupt-signal"))
-	if err != nil {
-		log.Println("interrupt-signal should be 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False")
-		os.Exit(1)
+	var interrupt bool
+	var err error
+	flagInterrupt := params.Get("interrupt-signal")
+
+	if flagInterrupt != "" {
+		interrupt, err = strconv.ParseBool(params.Get("interrupt-signal"))
+		if err != nil {
+			log.Println("interrupt-signal should be 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False")
+			os.Exit(1)
+		}
 	}
 
 	return &Runner{
@@ -74,6 +80,7 @@ func (r *Runner) restart(fileName string) {
 func (r *Runner) stop(cmd *exec.Cmd) {
 	if cmd != nil {
 		if r.interrupt {
+			log.Println("sending interrupt signal...")
 			cmd.Process.Signal(os.Interrupt)
 		} else {
 			cmd.Process.Kill()
